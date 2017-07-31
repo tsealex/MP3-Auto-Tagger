@@ -40,7 +40,7 @@ def create_artist_profile(artist):
 	log('constructing new artist profile')
 	success, retry = False, 0
 	artist_url = get_artist_url(artist)
-
+	global API_ERR_COUNT
 	while not success and retry < MAX_RETRY_NUM:
 		if retry == 0: log('obtaining artist id')
 		else: log('re-attempting')
@@ -52,6 +52,7 @@ def create_artist_profile(artist):
 			err('failed')
 			retry += 1
 			API_ERR_COUNT += 1
+			backoff()
 
 	if not success: return None
 	else: success, retry = False, 0
@@ -68,6 +69,7 @@ def create_artist_profile(artist):
 			err('failed')
 			retry += 1
 			API_ERR_COUNT += 1
+			backoff()
 
 	if not success: return None
 	log('done')
@@ -160,11 +162,11 @@ def get_album_covers(artist_name, album_title):
 	album_title = album_title.lower()
 	max_score, target_url = -1, None
 	for prof_album in profile['albums']:
-		score = lev.get_sim_score(prof_album['name'].lower(), album_title)
+		score = jw.get_sim_score(prof_album['name'].lower(), album_title)
 		if score == 1.0:
 			target_url = prof_album['cover_art_url']
 			break
-		elif score > 0.95 and score > max_score:
+		elif score >= 0.8 and score > max_score:
 			target_url = prof_album['cover_art_url']
 			max_score = score
 	if not target_url: rtn = None

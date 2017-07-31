@@ -45,7 +45,7 @@ class Album:
 
 		[NOTE: subject to change in the future]
 		'''
-		max_score, best_album, best_mapping = -1, None, None
+		max_score, best_album, best_mapping, best_matrix = -1, None, None, None
 
 		for album in albums:
 			sim_matrix = []
@@ -68,18 +68,19 @@ class Album:
 				best_album = album
 				max_score = score
 				best_mapping = mapping
+				best_matrix = sim_matrix
 		
 		if best_mapping:
 			tmp = []
 			log('most similar album: {} ({}%)'.format(str(best_album), get_percentage(max_score)))
 			debug('tagger', 'optimal mapping: ' + str(best_mapping))
 
-			debug(DEBUG_SRC, '"{}" tracklist:'.format(str(best_album)))
+			debug(DEBUG_SRC, '{} tracklist:'.format(str(best_album)))
 			for track in best_album.tracklist: 
 				debug(DEBUG_SRC, str(track))
 
 			for i, j in best_mapping:
-				if sim_matrix[i][j] > threshold or src_album.tracklist[i].title in src_album.tracklist[j].title:
+				if best_matrix[i][j] > threshold or src_album.tracklist[i].title in best_album.tracklist[j].title:
 					tmp.append((i, j))
 			best_mapping = tmp
 
@@ -179,7 +180,9 @@ class Track:
 		dur_sim = 1.0 if not dur1 or not dur2 else 1.0 - (abs(dur1 - dur2)) / float(max(dur1, dur2))
 		if not tracknum:
 			# three percent penalty for unmatched track number
-			pen_mod = 0.0 if track1.position[1] == track2.position[1] else 0.03
+			pen_mod = 0.0 if not track1.position[1] and track1.position[1] == track2.position[1] else 0.03
+			# the penalty increases by another 10% if the track2 position is missing
+			pen_mod += 0.10 if not track2.position[1] else 0.0
 			return max(jw.get_sim_score(track1.title.lower(), track2.title.lower()) * dur_sim - pen_mod, 0.0)
 		else: return 1.0 * dur_sim if track1.position[1] == track2.position[1] else 0.0
 

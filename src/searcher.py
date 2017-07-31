@@ -4,7 +4,6 @@ from resources import Album, Track
 
 import re
 import random
-from time import sleep
 
 from heapq import *
 
@@ -32,7 +31,7 @@ def search(release_title, artist_name='', track_count=None, track=False):
 	Return:
 		a list of Album with matched title and artist, constructed from the discogs release objects
 	'''
-	release_title = remove_edition(release_title)
+	if not track: release_title = remove_edition(release_title)
 
 	query = artist_name + ' - ' + release_title if artist_name else release_title
 
@@ -51,15 +50,11 @@ def search(release_title, artist_name='', track_count=None, track=False):
 			if skip_count > MAX_ALBUM_LIST_SIZE / 2: break # TODO: make this configurable
 
 			request_failed = True
-			while request_failed:
+			while request_failed: # TODO: make this configurable
 				try:
 					score = jw.get_sim_score(query, release.title)
 					debug(DEBUG_SRC, 'examining {}: {}%'.format(release.title, \
-						(int(score * 10000) / 100.0)))
-
-					if score < 0.5:
-						skip_count += 1
-						continue
+					 	(int(score * 10000) / 100.0)))				
 					'''
 					if score < 0.5 or len(release.tracklist) == 0 or \
 						parse_position(release.tracklist[0].position) == (None, None): 
@@ -67,18 +62,19 @@ def search(release_title, artist_name='', track_count=None, track=False):
 						debug(DEBUG_SRC, 'album skipped')
 						continue
 					'''
-
-					if track_count:
-						tmp = len(release.tracklist)
-						score *= 1.0 - abs(track_count - tmp) / float(max(track_count, tmp))
-
 					request_failed = False
 
 				except discogs_client.exceptions.HTTPError:
-					tmp = random.random() * 2.0
 					err('too many requests made to discogs')
-					log('sleep for {} seconds'.format(tmp))
-					sleep(tmp)
+					backoff()
+
+			if score < 0.5:
+				skip_count += 1
+				continue
+
+			if track_count:
+				tmp = len(release.tracklist)
+				score *= 1.0 - abs(track_count - tmp) / float(max(track_count, tmp))
 
 			if len(pq) < MAX_ALBUM_LIST_SIZE: 
 				skip_count = 0
@@ -106,8 +102,7 @@ def search(release_title, artist_name='', track_count=None, track=False):
 			except discogs_client.exceptions.HTTPError: 
 				tmp = random.random() * 2.0
 				err('too many requests made to discogs')
-				log('sleep for {} seconds'.format(tmp))
-				sleep(tmp)
+				backoff()
 
 	log('{} related albums selected for further processing'.format(len(albums)))
 	
@@ -141,5 +136,5 @@ def construct_artist_list(artists):
 	'''
 	rtn = []
 	for artist in artists:
-		rtn.append(artist.name)
+		rtn.append(remove_noise_in_artist_name(artist.name))
 	return rtn

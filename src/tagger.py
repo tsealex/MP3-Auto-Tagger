@@ -62,13 +62,13 @@ def load_tracks():
 			if track.changed:
 				track.save()
 				log('file saved with new changes: ' + track.filepath)
-
 				# move the file to new location and rename it
 				new_filepath = construct_filepath(track)
 				log('new file path: ' + new_filepath)
 				move_file(track.filepath, new_filepath)
 				log('file moved')
 				track.filepath = new_filepath
+			else: tracks.append(track) # else treat it as an individual track
 
 	# TODO: then process tracks in 'tracks'
 	album = Album()
@@ -215,6 +215,7 @@ def delete_dir(directory=PRE_PROCESS_DIR):
 					delete = False
 					err('unable to delete directory "{}"'.format(filename))
 			else: delete = False
+		else: delete = False
 	return delete
 
 
@@ -227,13 +228,12 @@ def construct_filepath(track):
 	path = POST_PROCESS_DIR or ''
 	if track.album:
 		if track.album.title:
-			if track.album.artists: path += get_artist_str(track.album.artists) + '/'
-			path += track.album.title if not track.album.year else str(track.album.year) + ' - ' + track.album.title
+			if track.album.artists: path += re.sub('[~#%&*{}\\:<>?/||\"]', '-', get_artist_str(track.album.artists)) + '/'
+			path += track.album.title if not track.album.year else str(track.album.year) + ' - ' + re.sub('[~#%&*{}\\:<>?/||\"]', '-', track.album.title)
 			path += '/'
 	if track.position[0]: path += 'Disc ' + str(track.position[0]) + '/'
 	if track.position[1]: path += str(track.position[1]) + '. '
-	path += track.title + '.mp3'
-	re.sub('[~#%&*{}\\:<>?/||\"]', '-', path)
+	path += re.sub('[~#%&*{}\\:<>?/||\"]', '-', track.title) + '.mp3'
 	return path
 
 

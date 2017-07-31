@@ -2,6 +2,9 @@ import py_stringmatching as sm
 from munkres import Munkres, make_cost_matrix 
 
 import math
+import time
+from time import sleep
+import random
 import re
 
 DEBUGGING = {
@@ -86,15 +89,28 @@ def remove_edition(title):
 	Args:
 		title - title to be modified
 	Return:
-		new title without any edition information
+		new title without any edition information 
 	'''
 	if not title: return title
 	# remove disc number
-	# title = re.sub('(\[|\(|\{) *(Disc|CD) *[0-9]+ *(\)|\]\}) *$', '', title, flags=re.IGNORECASE).strip()
+	title = re.sub('(\[|\(|\{| ) *(Disc|CD) *[0-9]+ *(\)|\]\}|) *$', '', title, flags=re.IGNORECASE).strip()
+	print(title)
 	# remove edition
-	title = re.sub('(\[|\(\{).+(\]|\}|\)) *$', '', title).strip()
+	title = re.sub('(\[|\(|\{).+(\]|\}|\)) *$', '', title).strip()
 
 	return title
+
+def remove_noise_in_artist_name(artist_name):
+	'''
+	Remove noise in the artist name
+	Args:
+		 artist_name - the artist's name to be examined (str)
+	Return:
+		a hopeful noise-free artist name (str)
+	'''
+	if not artist_name: return artist_name
+	artist_name = re.sub('(\(|\[)+ *[0-9]+ *(\)|\])+ *$', '', artist_name).strip()
+	return artist_name
 
 # an object used to compute the edit distance between two strings
 lev = sm.Levenshtein()
@@ -130,7 +146,8 @@ def log(msg, log_type='log', end='\n'):
 		log_type - type of the message, default to 'log'
 		end - ending string of the message 
 	'''
-	print('[{}] {}'.format(log_type, msg), end=end)
+	try: print('[{}] {}'.format(log_type, msg), end=end)
+	except: error('unable to print a log message')
 
 def debug(debug_src, msg):
 	'''
@@ -159,3 +176,20 @@ def get_percentage(number):
 	'''
 	number = int(number * 10000) / 100.0
 	return number
+
+LAST_BACKOFF_TS = 0 # refresh after one minute, reinitialize BACKOFF_PARAM to 2
+BACKOFF_PARAM = 2 # increase by one every time backoff is called
+
+def backoff():
+	'''
+	Used to rest the thread after requesting a server too many time
+	'''
+	global LAST_BACKOFF_TS
+	global BACKOFF_PARAM
+	if time.time() - LAST_BACKOFF_TS > 60: BACKOFF_PARAM = 2
+	LAST_BACKOFF_TS = time.time()
+	tmp = random.random() * BACKOFF_PARAM
+	BACKOFF_PARAM += 1
+	log('sleep for {} seconds'.format(tmp))
+	sleep(tmp)
+
