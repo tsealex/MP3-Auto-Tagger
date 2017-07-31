@@ -25,7 +25,7 @@ and apply the new info to the mp3 files under "src/ready/" <br>
 Lastly, the program will reposition your files to "src/processed" directory <br>
 <br>
 You should be able to find your files by the path <br>
-"src/processed/\<artist>/\<year> - <album>/Disc \<disc#>/\<track#>. \<track title>.mp3"
+"src/processed/\<artist>/\<year> - \<album>/Disc \<disc#>/\<track#>. \<track title>.mp3"
 <br>
 ## Note
 Make sure that your files are partially tagged, this program right now cannot identify a track without looking at its current tags. So, missing both artists and album is no good. Missing both track number and track title grantees that the program will fail (doing its jobs). Otherwise, as long as they are reasonably tagged (by this, I meant that you can tell what songs they are by looking at the current tags), the program should pretty accurately determine what songs they are and help you complete the tagging.  <br>
